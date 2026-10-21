@@ -1,0 +1,5 @@
+# Finais de linha consistentes (LF) entre Windows, macOS e Linux
+* text=auto eol=lf
+
+*.xlsx   binary
+*.sqlite binary

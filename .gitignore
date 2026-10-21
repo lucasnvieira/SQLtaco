@@ -1,0 +1,13 @@
+# Configuração local do Claude (preview do app)
+.claude/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Arquivos temporários do Excel e do sistema
+~$*.xlsx
+.DS_Store
+Thumbs.db

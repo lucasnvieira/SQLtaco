@@ -1,0 +1,3 @@
+# Necessário só para regenerar os dados (scripts/preparar_taco.py).
+# O app em app/ não precisa de Python.
+openpyxl>=3.0,<4

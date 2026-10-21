@@ -1,0 +1,567 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SQL com alimentos</title>
+<script>
+  // aplica o tema salvo antes do primeiro paint, para não piscar
+  try { const t = JSON.parse(localStorage.getItem("sqltaco.tema")); if (t) document.documentElement.dataset.theme = t; } catch {}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<style>
+:root {
+  --bg: #f6f5f1;
+  --panel: #ffffff;
+  --panel-2: #fbfaf7;
+  --ink: #1d1f1c;
+  --ink-2: #5c6058;
+  --ink-3: #8b8f86;
+  --line: #e3e1da;
+  --accent: #2f6b4f;
+  --accent-ink: #ffffff;
+  --accent-soft: #e4efe8;
+  --ok: #2f6b4f;
+  --ok-soft: #e4efe8;
+  --err: #a33a2b;
+  --err-soft: #f7e6e2;
+  --warn-soft: #f6efdc;
+  --code-bg: #fdfcf9;
+  --kw: #7a3e9d;
+  --kw-ink: #ffffff;
+  --str: #2f6b4f;
+  --num: #b05a1a;
+  --null: #9a9d95;
+  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #151715;
+    --panel: #1c1f1c;
+    --panel-2: #202420;
+    --ink: #e8e9e4;
+    --ink-2: #a8ada3;
+    --ink-3: #757a71;
+    --line: #2e332e;
+    --accent: #6fbf92;
+    --accent-ink: #0f1a13;
+    --accent-soft: #1f3328;
+    --ok: #6fbf92;
+    --ok-soft: #1f3328;
+    --err: #ec8a7a;
+    --err-soft: #3a2320;
+    --warn-soft: #36301f;
+    --code-bg: #181b18;
+    --kw: #c9a0e8;
+    --kw-ink: #1f1428;
+    --str: #8fd3aa;
+    --num: #f0a868;
+    --null: #6b7068;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #151715; --panel: #1c1f1c; --panel-2: #202420; --ink: #e8e9e4; --ink-2: #a8ada3; --ink-3: #757a71;
+  --line: #2e332e; --accent: #6fbf92; --accent-ink: #0f1a13; --accent-soft: #1f3328; --ok: #6fbf92; --ok-soft: #1f3328;
+  --err: #ec8a7a; --err-soft: #3a2320; --warn-soft: #36301f; --code-bg: #181b18; --kw: #c9a0e8; --kw-ink: #1f1428; --str: #8fd3aa; --num: #f0a868; --null: #6b7068;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.5 var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+code, .mono { font-family: var(--mono); font-size: 0.88em; }
+code { background: var(--accent-soft); padding: 1px 5px; border-radius: 4px; }
+button { font: inherit; cursor: pointer; }
+
+header.top {
+  display: flex; align-items: center; gap: 16px;
+  padding: 12px 20px; border-bottom: 1px solid var(--line); background: var(--panel);
+}
+.brand { font-weight: 600; font-size: 16px; letter-spacing: -0.01em; }
+.brand span { color: var(--accent); font-family: var(--mono); }
+.db-status { margin-left: auto; font-size: 13px; color: var(--ink-2); display: flex; align-items: center; gap: 8px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-3); }
+.dot.ready { background: var(--ok); }
+.dot.error { background: var(--err); }
+.progress-pill { font-size: 13px; color: var(--ink-2); font-family: var(--mono); }
+.theme-btn {
+  display: grid; place-items: center; width: 34px; height: 34px; flex: none;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink-2);
+}
+.theme-btn:hover { color: var(--ink); border-color: var(--ink-3); }
+/* mostra o ícone do tema para o qual o clique leva */
+.theme-btn .icon-sun { display: none; }
+:root[data-theme="dark"] .theme-btn .icon-sun { display: block; }
+:root[data-theme="dark"] .theme-btn .icon-moon { display: none; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .theme-btn .icon-sun { display: block; }
+  :root:not([data-theme="light"]) .theme-btn .icon-moon { display: none; }
+}
+
+.layout {
+  display: grid; grid-template-columns: 290px minmax(0, 1fr);
+  min-height: calc(100vh - 53px);
+}
+aside.sidebar {
+  border-right: 1px solid var(--line); background: var(--panel-2);
+  padding: 16px 12px; overflow-y: auto; max-height: calc(100vh - 53px); position: sticky; top: 0;
+}
+.side-section { margin-bottom: 18px; }
+.side-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 8px 6px; font-weight: 600; }
+.ex-item {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 7px 8px; border: 0; border-radius: 6px; background: transparent; color: var(--ink);
+  text-align: left; font-size: 14px;
+}
+.ex-item:hover { background: var(--accent-soft); }
+.ex-item.active { background: var(--accent); color: var(--accent-ink); }
+.ex-num { font-family: var(--mono); font-size: 12px; color: var(--ink-3); width: 20px; flex: none; }
+.ex-item.active .ex-num { color: inherit; opacity: 0.8; }
+.ex-check { margin-left: auto; font-size: 13px; color: var(--ok); }
+.ex-item.active .ex-check { color: inherit; }
+
+main { padding: 20px 24px 40px; max-width: 1100px; width: 100%; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+.prompt { padding: 18px 20px; margin-bottom: 14px; }
+.prompt .meta { font-size: 12px; color: var(--ink-3); font-family: var(--mono); margin-bottom: 4px; }
+.prompt h1 { font-size: 20px; margin: 0 0 8px; letter-spacing: -0.01em; font-weight: 600; }
+.prompt .body { color: var(--ink); }
+.prompt .body ul { margin: 6px 0; padding-left: 20px; }
+.prompt .body small { color: var(--ink-2); }
+.hint { margin-top: 12px; padding: 10px 12px; border-radius: 8px; background: var(--warn-soft); font-size: 14px; display: none; }
+.hint.show { display: block; }
+
+details.schema { margin-bottom: 14px; }
+details.schema summary { padding: 12px 16px; cursor: pointer; font-weight: 500; font-size: 14px; list-style: none; display: flex; gap: 8px; align-items: center; }
+details.schema summary::-webkit-details-marker { display: none; }
+details.schema summary::before {
+  content: "▸"; color: var(--ink-2); font-size: 22px; line-height: 1;
+  display: inline-block; width: 16px; text-align: center; transition: transform .15s;
+}
+details.schema[open] summary::before { transform: rotate(90deg); }
+.schema-body { padding: 0 16px 14px; }
+.schema-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.schema-table td { padding: 5px 8px; border-top: 1px solid var(--line); vertical-align: top; }
+.schema-table td:first-child { font-family: var(--mono); white-space: nowrap; }
+.schema-table td:nth-child(2) { font-family: var(--mono); color: var(--kw); white-space: nowrap; font-size: 12.5px; }
+.schema-notes { font-size: 13px; color: var(--ink-2); margin: 10px 0 0; padding-left: 18px; }
+
+.editor-card { overflow: hidden; }
+.CodeMirror {
+  height: auto; min-height: 170px; font-family: var(--mono); font-size: 14px; line-height: 1.55;
+  background: var(--code-bg); color: var(--ink); padding: 6px 0;
+}
+.CodeMirror-scroll { min-height: 170px; max-height: 420px; }
+.CodeMirror-gutters { background: var(--code-bg); border-right: 1px solid var(--line); }
+.CodeMirror-linenumber { color: var(--ink-3); }
+.CodeMirror-cursor { border-left-color: var(--ink); }
+.CodeMirror-selected, .CodeMirror-focused .CodeMirror-selected { background: var(--accent-soft) !important; }
+.cm-s-default .cm-keyword { color: var(--kw); font-weight: 500; }
+.cm-s-default .cm-string { color: var(--str); }
+.cm-s-default .cm-number { color: var(--num); }
+.cm-s-default .cm-comment { color: var(--ink-3); font-style: italic; }
+.cm-s-default .cm-builtin, .cm-s-default .cm-atom { color: var(--num); }
+.cm-s-default .cm-operator { color: var(--ink-2); }
+
+.toolbar {
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+  padding: 10px 12px; border-top: 1px solid var(--line); background: var(--panel);
+}
+.btn {
+  border: 1px solid var(--line); background: var(--panel); color: var(--ink);
+  padding: 6px 12px; border-radius: 7px; font-size: 14px;
+}
+.btn:hover { border-color: var(--ink-3); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 500; }
+.btn.primary:hover { filter: brightness(1.07); }
+.btn.check { background: var(--kw); color: var(--kw-ink); border-color: var(--kw); font-weight: 500; }
+.btn.check:hover { filter: brightness(1.07); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.kbd { font-family: var(--mono); font-size: 11px; opacity: 0.75; margin-left: 4px; }
+.toolbar .spacer { flex: 1; }
+
+.feedback { margin-top: 14px; padding: 12px 16px; border-radius: 10px; font-size: 14px; display: none; }
+.feedback.show { display: block; }
+.feedback.ok { background: var(--ok-soft); color: var(--ok); border: 1px solid color-mix(in srgb, var(--ok) 30%, transparent); }
+.feedback.err { background: var(--err-soft); color: var(--err); border: 1px solid color-mix(in srgb, var(--err) 30%, transparent); }
+.feedback b { font-weight: 600; }
+.feedback pre { margin: 8px 0 0; font-family: var(--mono); font-size: 12.5px; white-space: pre-wrap; color: var(--ink); }
+
+.results { margin-top: 14px; }
+.results-head { display: flex; justify-content: space-between; align-items: baseline; padding: 10px 16px; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--ink-2); }
+.results-head .mono { font-size: 12px; }
+.table-wrap { overflow: auto; max-height: 460px; }
+table.res { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+table.res th, table.res td { padding: 6px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; text-align: left; }
+table.res th { position: sticky; top: 0; background: var(--panel-2); font-family: var(--mono); font-weight: 500; font-size: 12.5px; color: var(--ink-2); }
+table.res th .type { color: var(--ink-3); font-weight: 400; margin-left: 4px; }
+table.res td.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 13px; }
+table.res td.null { color: var(--null); font-style: italic; font-family: var(--mono); font-size: 12.5px; }
+table.res tr:hover td { background: var(--panel-2); }
+.empty { padding: 28px 16px; text-align: center; color: var(--ink-3); font-size: 14px; }
+.error-box { padding: 14px 16px; font-family: var(--mono); font-size: 13px; color: var(--err); white-space: pre-wrap; }
+
+footer.credit { font-size: 12px; color: var(--ink-3); margin-top: 28px; line-height: 1.6; }
+footer.credit a { color: inherit; }
+
+.loading { padding: 40px; text-align: center; color: var(--ink-2); }
+
+.schema-scroll { overflow-x: auto; }
+
+@media (max-width: 820px) {
+  .layout { grid-template-columns: minmax(0, 1fr); }
+  aside.sidebar { position: static; max-height: 230px; border-right: 0; border-bottom: 1px solid var(--line); }
+  .schema-table td:nth-child(2) { display: none; }
+  .schema-table td:last-child { white-space: normal; }
+  main { padding: 16px; }
+  header.top { padding: 12px 16px; flex-wrap: wrap; }
+  .progress-pill { display: none; }
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span>SQL</span> com alimentos</div>
+  <div class="progress-pill" id="progress"></div>
+  <div class="db-status"><span class="dot" id="db-dot"></span><span id="db-text">Carregando DuckDB…</span></div>
+  <button class="theme-btn" id="btn-theme" type="button" aria-label="Alternar tema claro/escuro" title="Alternar tema claro/escuro">
+    <svg class="icon-sun" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    <svg class="icon-moon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+  </button>
+</header>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar"></aside>
+
+  <main>
+    <section class="card prompt" id="prompt"></section>
+
+    <details class="card schema" id="schema">
+      <summary>Tabela <code>alimentos</code> · 597 linhas · valores por 100 g</summary>
+      <div class="schema-body">
+        <div class="schema-scroll"><table class="schema-table">
+          <tr><td>id</td><td>INTEGER</td><td>Número do alimento na TACO (chave primária)</td></tr>
+          <tr><td>descricao</td><td>VARCHAR</td><td>Descrição. Padrão: "Alimento, variedade, preparo"</td></tr>
+          <tr><td>energia_kcal</td><td>DOUBLE</td><td>Energia (kcal)</td></tr>
+          <tr><td>proteina_g</td><td>DOUBLE</td><td>Proteína (g)</td></tr>
+          <tr><td>lipideos_g</td><td>DOUBLE</td><td>Lipídeos, ou seja, gorduras totais (g)</td></tr>
+          <tr><td>carboidrato_g</td><td>DOUBLE</td><td>Carboidrato total (g)</td></tr>
+          <tr><td>sodio_mg</td><td>DOUBLE</td><td>Sódio (mg)</td></tr>
+        </table></div>
+        <ul class="schema-notes">
+          <li>Todos os nutrientes se referem a <b>100 g de parte comestível</b>.</li>
+          <li><code>NULL</code>: não analisado ou não aplicável. <code>0</code>: zero ou só traços.</li>
+          <li><b>DuckDB</b> rodando no seu navegador. Você pode criar tabelas à vontade; "Reiniciar banco" volta ao original.</li>
+        </ul>
+      </div>
+    </details>
+
+    <section class="card editor-card">
+      <textarea id="sql"></textarea>
+      <div class="toolbar">
+        <button class="btn primary" id="btn-run" disabled>Executar <span class="kbd">Ctrl+Enter</span></button>
+        <button class="btn check" id="btn-check" disabled>Verificar</button>
+        <button class="btn" id="btn-hint">Dica</button>
+        <button class="btn" id="btn-solution">Ver solução</button>
+        <span class="spacer"></span>
+        <button class="btn" id="btn-reset" disabled title="Recria a tabela alimentos com os dados originais">Reiniciar banco</button>
+      </div>
+    </section>
+
+    <div class="feedback" id="feedback" role="status"></div>
+
+    <section class="card results" id="results">
+      <div class="empty">Escreva uma query e execute para ver o resultado aqui.</div>
+    </section>
+
+    <footer class="credit">
+      Dados: Adaptado de NEPA/UNICAMP. <i>Tabela Brasileira de Composição de Alimentos (TACO)</i>, 4ª ed. revisada e ampliada. Campinas, 2011.
+      Conteúdo educacional; não substitui orientação nutricional.
+    </footer>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/sql/sql.min.js"></script>
+<script src="taco_data.js"></script>
+<script src="exercicios.js"></script>
+<script type="module">
+import * as duckdb from "https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.29.0/+esm";
+
+const MAX_LINHAS_EXIBIDAS = 500;
+
+// ---------- estado salvo no navegador (opcional) ----------
+const store = {
+  get(k, padrao) { try { const v = localStorage.getItem("sqltaco." + k); return v === null ? padrao : JSON.parse(v); } catch { return padrao; } },
+  set(k, v) { try { localStorage.setItem("sqltaco." + k, JSON.stringify(v)); } catch {} },
+};
+let concluidos = store.get("concluidos", {});
+let rascunhos = store.get("rascunhos", {});
+let atual = store.get("atual", EXERCICIOS[0].id);
+
+// ---------- editor ----------
+const editor = CodeMirror.fromTextArea(document.getElementById("sql"), {
+  mode: "text/x-sql",
+  lineNumbers: true,
+  indentUnit: 2,
+  tabSize: 2,
+  smartIndent: true,
+  extraKeys: {
+    "Ctrl-Enter": () => executar(),
+    "Cmd-Enter": () => executar(),
+    Tab: (cm) => cm.replaceSelection("  "),
+  },
+});
+editor.on("change", () => {
+  rascunhos[atual] = editor.getValue();
+  store.set("rascunhos", rascunhos);
+});
+
+// ---------- banco ----------
+let conn = null;
+const esperado = {}; // resultados dos gabaritos, calculados uma vez na carga
+
+function tacoCSV() {
+  const esc = (v) => v === null ? "" : (typeof v === "string" ? '"' + v.replace(/"/g, '""') + '"' : String(v));
+  return [TACO.colunas.join(","), ...TACO.linhas.map((l) => l.map(esc).join(","))].join("\n");
+}
+
+async function criarTabela() {
+  await conn.query("DROP TABLE IF EXISTS alimentos");
+  await conn.query(`
+    CREATE TABLE alimentos AS
+    SELECT * FROM read_csv('taco.csv', header = true, quote = '"', columns = {
+      'id': 'INTEGER', 'descricao': 'VARCHAR', 'energia_kcal': 'DOUBLE', 'proteina_g': 'DOUBLE',
+      'lipideos_g': 'DOUBLE', 'carboidrato_g': 'DOUBLE', 'sodio_mg': 'DOUBLE'
+    })`);
+}
+
+async function iniciarBanco() {
+  const bundle = await duckdb.selectBundle(duckdb.getJsDelivrBundles());
+  const workerUrl = URL.createObjectURL(new Blob([`importScripts("${bundle.mainWorker}");`], { type: "text/javascript" }));
+  const worker = new Worker(workerUrl);
+  const db = new duckdb.AsyncDuckDB(new duckdb.VoidLogger(), worker);
+  await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
+  URL.revokeObjectURL(workerUrl);
+  await db.open({ query: { castBigIntToDouble: true, castDecimalToDouble: true } });
+  await db.registerFileText("taco.csv", tacoCSV());
+  conn = await db.connect();
+  await criarTabela();
+  for (const ex of EXERCICIOS) esperado[ex.id] = await rodar(ex.solucao);
+}
+
+async function rodar(sql) {
+  const t0 = performance.now();
+  const tabela = await conn.query(sql);
+  const ms = performance.now() - t0;
+  const campos = tabela.schema.fields;
+  const colunas = campos.map((f) => f.name);
+  const tipos = campos.map((f) => String(f.type));
+  const vetores = campos.map((_, i) => tabela.getChildAt(i));
+  const linhas = [];
+  for (let r = 0; r < tabela.numRows; r++) {
+    linhas.push(vetores.map((v) => normalizarValor(v.get(r))));
+  }
+  return { colunas, tipos, linhas, ms };
+}
+
+function normalizarValor(v) {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "bigint") return Number(v);
+  if (v instanceof Date) return v.toISOString().slice(0, 10);
+  if (typeof v === "object") return String(v);
+  return v;
+}
+
+// ---------- comparação ----------
+function chave(valor) {
+  if (valor === null) return "∅";
+  if (typeof valor === "number") return (Math.round(valor * 10) / 10).toFixed(1);
+  if (typeof valor === "boolean") return valor ? "true" : "false";
+  return String(valor).trim();
+}
+
+function comparar(obtido, gabarito, ordenado) {
+  if (obtido.colunas.length !== gabarito.colunas.length) {
+    return `Seu resultado tem <b>${obtido.colunas.length} coluna(s)</b>; o esperado tem <b>${gabarito.colunas.length}</b>.`;
+  }
+  if (obtido.linhas.length !== gabarito.linhas.length) {
+    return `Seu resultado tem <b>${obtido.linhas.length} linha(s)</b>; o esperado tem <b>${gabarito.linhas.length}</b>.`;
+  }
+  const a = obtido.linhas.map((l) => l.map(chave).join(" | "));
+  const b = gabarito.linhas.map((l) => l.map(chave).join(" | "));
+  if (ordenado) {
+    const i = a.findIndex((x, k) => x !== b[k]);
+    if (i === -1) return null;
+    const mesmoConjunto = [...a].sort().join("\n") === [...b].sort().join("\n");
+    if (mesmoConjunto) return "As linhas estão certas, mas a <b>ordem</b> não. Confira o ORDER BY.";
+    return `A linha ${i + 1} não bate com o esperado.<pre>sua:      ${escapar(a[i])}</pre>`;
+  }
+  const sa = [...a].sort(), sb = [...b].sort();
+  const i = sa.findIndex((x, k) => x !== sb[k]);
+  if (i === -1) return null;
+  const sobra = a.find((x) => !b.includes(x));
+  return sobra
+    ? `Pelo menos uma linha do seu resultado não está no esperado:<pre>${escapar(sobra)}</pre>`
+    : "Os valores não batem com o esperado. Confira filtros, cálculos e arredondamento.";
+}
+
+// ---------- UI ----------
+const $ = (id) => document.getElementById(id);
+const escapar = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const exercicioAtual = () => EXERCICIOS.find((e) => e.id === atual) || EXERCICIOS[0];
+
+function renderSidebar() {
+  const grupos = {};
+  EXERCICIOS.forEach((ex, i) => (grupos[ex.nivel] ||= []).push([ex, i + 1]));
+  let html = "";
+  for (const [nivel, itens] of Object.entries(grupos)) {
+    html += `<div class="side-section"><div class="side-title">Nível ${nivel} · ${NIVEIS[nivel]}</div>`;
+    for (const [ex, n] of itens) {
+      html += `<button class="ex-item ${ex.id === atual ? "active" : ""}" data-id="${ex.id}">
+        <span class="ex-num">${String(n).padStart(2, "0")}</span>${escapar(ex.titulo)}
+        ${concluidos[ex.id] ? '<span class="ex-check" aria-label="concluído">✓</span>' : ""}</button>`;
+    }
+    html += "</div>";
+  }
+  $("sidebar").innerHTML = html;
+  $("sidebar").querySelectorAll(".ex-item").forEach((b) => b.addEventListener("click", () => abrir(b.dataset.id)));
+  const feitos = EXERCICIOS.filter((e) => concluidos[e.id]).length;
+  $("progress").textContent = `${feitos}/${EXERCICIOS.length} concluídos`;
+}
+
+function abrir(id) {
+  atual = id;
+  store.set("atual", id);
+  const ex = exercicioAtual();
+  const n = EXERCICIOS.indexOf(ex) + 1;
+  $("prompt").innerHTML = `
+    <div class="meta">exercício ${String(n).padStart(2, "0")} · nível ${ex.nivel}${ex.ordenado ? " · a ordem importa" : ""}</div>
+    <h1>${escapar(ex.titulo)}</h1>
+    <div class="body">${ex.enunciado}</div>
+    <div class="hint" id="hint"><b>Dica:</b> ${escapar(ex.dica)}</div>`;
+  editor.setValue(rascunhos[id] ?? "-- escreva sua query aqui\n");
+  editor.setCursor(editor.lineCount(), 0);
+  esconderFeedback();
+  $("results").innerHTML = `<div class="empty">Escreva uma query e execute para ver o resultado aqui.</div>`;
+  renderSidebar();
+  editor.focus();
+}
+
+function mostrarFeedback(tipo, html) {
+  const f = $("feedback");
+  f.className = `feedback show ${tipo}`;
+  f.innerHTML = html;
+}
+function esconderFeedback() { $("feedback").className = "feedback"; }
+
+function renderResultado(res) {
+  if (!res.colunas.length) {
+    $("results").innerHTML = `<div class="empty">Comando executado (${res.ms.toFixed(0)} ms), sem resultado tabular.</div>`;
+    return;
+  }
+  const visiveis = res.linhas.slice(0, MAX_LINHAS_EXIBIDAS);
+  const tipoCurto = (t) => t.replace(/<.*>/, "").replace("Float64", "double").replace("Int32", "int").replace("Utf8", "text").toLowerCase();
+  const th = res.colunas.map((c, i) => `<th>${escapar(c)}<span class="type">${escapar(tipoCurto(res.tipos[i]))}</span></th>`).join("");
+  const tr = visiveis.map((l) => "<tr>" + l.map((v) => {
+    if (v === null) return '<td class="null">NULL</td>';
+    if (typeof v === "number") return `<td class="num">${Number.isInteger(v) ? v : v.toLocaleString("pt-BR", { maximumFractionDigits: 4 })}</td>`;
+    return `<td>${escapar(v)}</td>`;
+  }).join("") + "</tr>").join("");
+  const total = res.linhas.length;
+  $("results").innerHTML = `
+    <div class="results-head">
+      <span>${total} linha${total === 1 ? "" : "s"}${total > MAX_LINHAS_EXIBIDAS ? ` (mostrando ${MAX_LINHAS_EXIBIDAS})` : ""}</span>
+      <span class="mono">${res.ms.toFixed(0)} ms</span>
+    </div>
+    <div class="table-wrap"><table class="res"><thead><tr>${th}</tr></thead><tbody>${tr}</tbody></table></div>`;
+}
+
+function renderErro(e) {
+  const msg = String(e && e.message ? e.message : e);
+  $("results").innerHTML = `<div class="error-box">${escapar(msg)}</div>`;
+}
+
+async function executar() {
+  if (!conn) return;
+  esconderFeedback();
+  try {
+    const res = await rodar(editor.getValue());
+    renderResultado(res);
+    return res;
+  } catch (e) {
+    renderErro(e);
+    return null;
+  }
+}
+
+async function verificar() {
+  const ex = exercicioAtual();
+  if (!conn) return;
+  const res = await executar();
+  if (!res) {
+    mostrarFeedback("err", "<b>A query deu erro.</b> Corrija e tente de novo; a mensagem do DuckDB está abaixo.");
+    return;
+  }
+  const problema = comparar(res, esperado[ex.id], ex.ordenado);
+  if (problema) {
+    mostrarFeedback("err", `<b>Ainda não.</b> ${problema}`);
+  } else {
+    concluidos[ex.id] = true;
+    store.set("concluidos", concluidos);
+    renderSidebar();
+    const proximo = EXERCICIOS[EXERCICIOS.indexOf(ex) + 1];
+    mostrarFeedback("ok", `<b>Correto!</b> ${proximo ? `<button class="btn" id="btn-next" style="margin-left:8px">Próximo: ${escapar(proximo.titulo)} →</button>` : "Você concluiu todos os exercícios."}`);
+    if (proximo) $("btn-next").addEventListener("click", () => abrir(proximo.id));
+  }
+}
+
+$("btn-run").addEventListener("click", executar);
+$("btn-check").addEventListener("click", verificar);
+$("btn-hint").addEventListener("click", () => { const h = $("hint"); if (h) h.classList.toggle("show"); });
+$("btn-solution").addEventListener("click", () => {
+  editor.setValue(exercicioAtual().solucao);
+  editor.focus();
+});
+$("btn-theme").addEventListener("click", () => {
+  const raiz = document.documentElement;
+  const escuroAgora = raiz.dataset.theme
+    ? raiz.dataset.theme === "dark"
+    : matchMedia("(prefers-color-scheme: dark)").matches;
+  raiz.dataset.theme = escuroAgora ? "light" : "dark";
+  store.set("tema", raiz.dataset.theme);
+});
+$("btn-reset").addEventListener("click", async () => {
+  try {
+    await criarTabela();
+    mostrarFeedback("ok", "Tabela <code>alimentos</code> recriada com os dados originais.");
+  } catch (e) { renderErro(e); }
+});
+
+// ---------- início ----------
+if (!EXERCICIOS.some((e) => e.id === atual)) atual = EXERCICIOS[0].id;
+$("schema").open = !store.get("viuEsquema", false);
+$("schema").addEventListener("toggle", () => store.set("viuEsquema", true));
+abrir(atual);
+
+try {
+  await iniciarBanco();
+  $("db-dot").className = "dot ready";
+  $("db-text").textContent = "DuckDB pronto";
+  ["btn-run", "btn-check", "btn-reset"].forEach((id) => ($(id).disabled = false));
+} catch (e) {
+  console.error(e);
+  $("db-dot").className = "dot error";
+  $("db-text").textContent = "Falha ao carregar o banco";
+  renderErro(e);
+}
+</script>
+</body>
+</html>
