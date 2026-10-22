@@ -2,6 +2,11 @@
 
 Registro resumido do que foi feito e **por quê**. Cada item traz a decisão e o raciocínio por trás dela, para quem chegar ao repositório depois (inclusive nós mesmos).
 
+## [0.1.2] - 2026-10-21 - Licença
+
+- **Licença MIT para o código.** É simples e permissiva, e é o padrão em projetos educacionais abertos: qualquer pessoa pode usar, adaptar e redistribuir citando a autoria.
+- **Os dados ficam fora da MIT.** São adaptados da TACO, cuja condição é a reprodução com citação da fonte. Não é possível relicenciar dados de terceiros, então o `LICENSE` e o README separam explicitamente código e dados.
+
 ## [0.1.1] - 2026-10-21 - Preparação do repositório
 
 - **Deploy pelo GitHub Pages via Actions** (`.github/workflows/pages.yml`), publicando só a pasta `app/`. O Pages "por branch" aceita apenas a raiz ou `/docs`; o workflow mantém a estrutura `app/` + `dados/` + `scripts/` sem misturar o site com o pipeline de dados.

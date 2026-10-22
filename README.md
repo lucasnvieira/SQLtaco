@@ -40,6 +40,17 @@ python -m http.server 8765 --directory app
 
 Abra http://localhost:8765. O `app/taco_data.js` gerado fica versionado, então para só rodar o app basta o último comando.
 
+Para adicionar exercícios, edite `app/exercicios.js`: cada um precisa de uma `solucao`, e o app compara o resultado do aluno com o dela.
+
 ## Publicação
 
-O workflow `.github/workflows/pages.yml` publica a pasta `app/` no GitHub Pages a cada push na `main`. Antes do primeiro deploy, em **Settings → Pages → Build and deployment**, escolha **Source: GitHub Actions**. Para adicionar exercícios, edite `app/exercicios.js`: cada um precisa de uma `solucao`, e o app compara o resultado do aluno com o dela.
+O workflow `.github/workflows/pages.yml` publica a pasta `app/` no GitHub Pages a cada push na `main`. Antes do primeiro deploy, em **Settings → Pages → Build and deployment**, escolha **Source: GitHub Actions**.
+
+## Licença
+
+- **Código** (`app/`, `scripts/` e configurações): [MIT](LICENSE).
+- **Dados** (`dados/` e `app/taco_data.js`): adaptados da TACO e **não** cobertos pela licença MIT. A reprodução é permitida desde que a fonte seja citada:
+
+  > NEPA/UNICAMP. *Tabela Brasileira de Composição de Alimentos (TACO)*, 4ª ed. revisada e ampliada. Campinas: NEPA-UNICAMP, 2011.
+
+Conteúdo educacional; não substitui orientação nutricional.
