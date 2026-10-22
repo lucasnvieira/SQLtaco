@@ -42,10 +42,6 @@ Abra http://localhost:8765. O `app/taco_data.js` gerado fica versionado, então 
 
 Para adicionar exercícios, edite `app/exercicios.js`: cada um precisa de uma `solucao`, e o app compara o resultado do aluno com o dela.
 
-## Publicação
-
-O workflow `.github/workflows/pages.yml` publica a pasta `app/` no GitHub Pages a cada push na `main`. Antes do primeiro deploy, em **Settings → Pages → Build and deployment**, escolha **Source: GitHub Actions**.
-
 ## Licença
 
 - **Código** (`app/`, `scripts/` e configurações): [MIT](LICENSE).
