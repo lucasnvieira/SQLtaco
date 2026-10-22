@@ -1,6 +1,5 @@
 # SQL com alimentos
 
-https://lucasnvieira.github.io/SQLtaco/
 Treino de SQL com a Tabela Brasileira de Composição de Alimentos (TACO, 4ª ed., NEPA/UNICAMP).
 O SQL roda no navegador com DuckDB-WASM: não há backend. 
 
