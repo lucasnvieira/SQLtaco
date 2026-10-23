@@ -3,6 +3,8 @@
 Treino de SQL com a Tabela Brasileira de Composição de Alimentos (TACO, 4ª ed., NEPA/UNICAMP).
 O SQL roda no navegador com DuckDB-WASM: não há backend. 
 
+**Veja o projeto:** https://lucasnvieira.github.io/SQLtaco/
+
 As decisões de modelagem e de produto estão explicadas no [CHANGELOG.md](CHANGELOG.md).
 
 ## Estrutura
@@ -30,7 +32,9 @@ app/taco_data.js                  dados embutidos (gerado pelo script)
 
 Limpeza: `Tr` vira 0; `NA`, `*` e células vazias viram NULL; carboidrato negativo (4 casos, efeito do cálculo por diferença) vira 0.
 
-## Rodar
+## Reproduzir no seu computador
+
+Só é preciso se você quiser refazer a base ou mexer no código. Para usar o treino, abra o [projeto publicado](https://lucasnvieira.github.io/SQLtaco/).
 
 ```bash
 pip install -r requirements.txt
@@ -38,7 +42,7 @@ python scripts/preparar_taco.py dados/bruto/taco_4a_edicao.xlsx
 python -m http.server 8765 --directory app
 ```
 
-Abra http://localhost:8765. O `app/taco_data.js` gerado fica versionado, então para só rodar o app basta o último comando.
+Depois, abra http://localhost:8765 no navegador (o endereço aponta para o seu próprio computador). O `app/taco_data.js` gerado fica versionado, então para só rodar o app basta o último comando.
 
 Para adicionar exercícios, edite `app/exercicios.js`: cada um precisa de uma `solucao`, e o app compara o resultado do aluno com o dela.
 
